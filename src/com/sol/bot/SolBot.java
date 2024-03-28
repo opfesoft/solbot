@@ -1,9 +1,11 @@
 package com.sol.bot;
 
+import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,19 +17,19 @@ import discord4j.core.object.entity.channel.MessageChannel;
 
 public class SolBot
 {
-	public static final String HELP_MSG = "!learn <charName> <spellId>\n" + "!unlearn <charName> <spellId>\n"
+	public static final String HELP_MSG = "```\n" + "!learn <charName> <spellId>\n" + "!unlearn <charName> <spellId>\n"
 			+ "!help skills\n" + "!skill <charName> <skillId> <value>\n"
 			+ "!item <charName> <itemId1> <itemId2> <itemId3> ...\n" + "!money <charName> <goldAmount>\n"
-			+ "!revive <charName>\n";
+			+ "!revive <charName>\n" + "!log\n" + "```\n";
 	public static final String HELP_MSG_SKILLS = "alchemy (171), blacksmithing (164), cooking (185), enchanting (333), engineering (202), "
 			+ "first aid (129), fishing (356), herbalism (182), inscription (773), jewelcrafting (755), leatherworking (165), mining (186), "
 			+ "riding (762), skinning (393), tailoring (197)";
 
 	public static void main(String[] args) throws Exception
 	{
-		if (args.length < 2)
+		if (args.length < 3)
 		{
-			System.out.println("Usage: " + SolBot.class.getName() + " <tokenFile> <namedPipe>");
+			System.out.println("Usage: " + SolBot.class.getName() + " <tokenFile> <namedPipe> <worldLog>");
 			System.exit(1);
 		}
 
@@ -36,6 +38,14 @@ public class SolBot
 		if (!Files.isReadable(tokenFile))
 		{
 			System.err.println("Cannot read " + tokenFile);
+			System.exit(1);
+		}
+
+		Path worldLog = Paths.get(args[2]);
+
+		if (!Files.isReadable(worldLog))
+		{
+			System.err.println("Cannot read " + worldLog);
 			System.exit(1);
 		}
 
@@ -49,7 +59,7 @@ public class SolBot
 
 			gateway.on(MessageCreateEvent.class).subscribe(event ->
 			{
-				parseMessage(event.getMessage(), namedPipe);
+				parseMessage(event.getMessage(), namedPipe, worldLog);
 			});
 
 			gateway.onDisconnect().block();
@@ -57,7 +67,7 @@ public class SolBot
 		}
 	}
 
-	public static void parseMessage(Message message, Path namedPipe)
+	public static void parseMessage(Message message, Path namedPipe, Path worldLog)
 	{
 		String msg = message.getContent();
 
@@ -85,6 +95,12 @@ public class SolBot
 			{
 				MessageChannel channel = message.getChannel().block();
 				channel.createMessage(HELP_MSG_SKILLS).block();
+				return;
+			}
+			else if (msg.equals("!log"))
+			{
+				MessageChannel channel = message.getChannel().block();
+				channel.createMessage(readLog(worldLog)).block();
 				return;
 			}
 			else if (msg.startsWith("!learn"))
@@ -167,5 +183,53 @@ public class SolBot
 		{
 			e.printStackTrace();
 		}
+	}
+
+	public static String readLog(Path worldLog)
+	{
+		if (!Files.isReadable(worldLog))
+		{
+			return "Error: cannot read log\n";
+		}
+
+		LinkedList<String> a = new LinkedList<String>();
+		String msg = "```\n";
+
+		try (RandomAccessFile f = new RandomAccessFile(worldLog.toFile(), "r"))
+		{
+			if (f.length() > 5120)
+			{
+				f.seek(f.length() - 5120);
+			}
+
+			String line = f.readLine();
+
+			while (line != null)
+			{
+				a.add(line);
+				line = f.readLine();
+			}
+		}
+		catch (Exception e)
+		{
+			return "Error: " + e.getMessage() + "\n";
+		}
+
+		if (a.size() == 0)
+		{
+			return "Error: log empty\n";
+		}
+
+		while (a.size() > 10)
+		{
+			a.remove(0);
+		}
+
+		for (String s : a)
+		{
+			msg += s + "\n";
+		}
+
+		return msg + "```\n";
 	}
 }
