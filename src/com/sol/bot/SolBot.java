@@ -20,10 +20,12 @@ public class SolBot
 	public static final String HELP_MSG = "```\n" + "!learn <charName> <spellId>\n" + "!unlearn <charName> <spellId>\n"
 			+ "!help skills\n" + "!skill <charName> <skillId> <value>\n"
 			+ "!item <charName> <itemId1> <itemId2> <itemId3> ...\n" + "!money <charName> <goldAmount>\n"
-			+ "!revive <charName>\n" + "!log\n" + "```\n";
+			+ "!revive <charName>\n" + "!log\n" + "!start\n" + "!stop\n" + "```\n";
 	public static final String HELP_MSG_SKILLS = "alchemy (171), blacksmithing (164), cooking (185), enchanting (333), engineering (202), "
 			+ "first aid (129), fishing (356), herbalism (182), inscription (773), jewelcrafting (755), leatherworking (165), mining (186), "
 			+ "riding (762), skinning (393), tailoring (197)";
+	public static final String TMP_START = "/tmp/sol_start";
+	public static final String TMP_STOP = "/tmp/sol_stop";
 
 	public static void main(String[] args) throws Exception
 	{
@@ -76,33 +78,55 @@ public class SolBot
 			return;
 		}
 
-		if (!Files.isWritable(namedPipe))
-		{
-			return;
-		}
-
 		try
 		{
 			String cmd = null;
 
 			if (msg.equals("!help"))
 			{
-				MessageChannel channel = message.getChannel().block();
-				channel.createMessage(HELP_MSG).block();
+				writeMessage(message, HELP_MSG);
 				return;
 			}
 			else if (msg.equals("!help skills"))
 			{
-				MessageChannel channel = message.getChannel().block();
-				channel.createMessage(HELP_MSG_SKILLS).block();
+				writeMessage(message, HELP_MSG_SKILLS);
 				return;
 			}
 			else if (msg.equals("!log"))
 			{
-				MessageChannel channel = message.getChannel().block();
-				channel.createMessage(readLog(worldLog)).block();
+				writeMessage(message, readLog(worldLog));
 				return;
 			}
+			else if (msg.equals("!start"))
+			{
+				writeMessage(message, "Start Sol server");
+				Path start = Paths.get(TMP_START);
+
+				if (!Files.exists(start))
+				{
+					Files.createFile(start);
+				}
+
+				return;
+			}
+			else if (msg.equals("!stop"))
+			{
+				writeMessage(message, "Stop Sol server");
+				Path stop = Paths.get(TMP_STOP);
+
+				if (!Files.exists(stop))
+				{
+					Files.createFile(stop);
+				}
+
+				return;
+			}
+
+			if (!Files.isWritable(namedPipe))
+			{
+				return;
+			}
+
 			else if (msg.startsWith("!learn"))
 			{
 				Pattern pattern = Pattern.compile("^!learn (\\w+) (\\d+)$");
@@ -175,13 +199,22 @@ public class SolBot
 
 			if (cmd != null)
 			{
-				MessageChannel channel = message.getChannel().block();
-				channel.createMessage("Command executed: " + cmd).block();
+				writeMessage(message, "Command executed: " + cmd);
 			}
 		}
 		catch (Exception e)
 		{
 			e.printStackTrace();
+		}
+	}
+
+	public static void writeMessage(Message message, String msg)
+	{
+		MessageChannel channel = message.getChannel().block();
+
+		if (channel != null)
+		{
+			channel.createMessage(msg).block();
 		}
 	}
 
