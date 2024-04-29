@@ -54,19 +54,15 @@ public class SolBot
 		String token = Files.readAllLines(tokenFile).get(0);
 		Path namedPipe = Paths.get(args[1]);
 
-		while (true)
+		DiscordClient client = DiscordClient.create(token);
+		GatewayDiscordClient gateway = client.login().block();
+
+		gateway.on(MessageCreateEvent.class).subscribe(event ->
 		{
-			DiscordClient client = DiscordClient.create(token);
-			GatewayDiscordClient gateway = client.login().block();
+			parseMessage(event.getMessage(), namedPipe, worldLog);
+		});
 
-			gateway.on(MessageCreateEvent.class).subscribe(event ->
-			{
-				parseMessage(event.getMessage(), namedPipe, worldLog);
-			});
-
-			gateway.onDisconnect().block();
-			Thread.sleep(5000);
-		}
+		gateway.onDisconnect().block();
 	}
 
 	public static void parseMessage(Message message, Path namedPipe, Path worldLog)
