@@ -20,7 +20,7 @@ public class SolBot
 	public static final String HELP_MSG = "```\n" + "!learn <charName> <spellId>\n" + "!unlearn <charName> <spellId>\n"
 			+ "!help skills\n" + "!skill <charName> <skillId> <value>\n"
 			+ "!item <charName> <itemId1> <itemId2> <itemId3> ...\n" + "!money <charName> <goldAmount>\n"
-			+ "!revive <charName>\n" + "!log\n" + "!start\n" + "!stop\n" + "```\n";
+			+ "!revive <charName>\n" + "!log\n" + "!starttime\n" + "!start\n" + "!stop\n" + "```\n";
 	public static final String HELP_MSG_SKILLS = "alchemy (171), blacksmithing (164), cooking (185), enchanting (333), engineering (202), "
 			+ "first aid (129), fishing (356), herbalism (182), inscription (773), jewelcrafting (755), leatherworking (165), mining (186), "
 			+ "riding (762), skinning (393), tailoring (197)";
@@ -91,6 +91,11 @@ public class SolBot
 			else if (msg.equals("!log"))
 			{
 				writeMessage(message, readLog(worldLog));
+				return;
+			}
+			else if (msg.equals("!starttime"))
+			{
+				writeMessage(message, startTime(worldLog));
 				return;
 			}
 			else if (msg.equals("!start"))
@@ -260,5 +265,45 @@ public class SolBot
 		}
 
 		return msg + "```\n";
+	}
+
+	public static String startTime(Path worldLog)
+	{
+		if (!Files.isReadable(worldLog))
+		{
+			return "Error: cannot read log\n";
+		}
+
+		String line = null;
+		String msg = "```\n";
+
+		try (RandomAccessFile f = new RandomAccessFile(worldLog.toFile(), "r"))
+		{
+			line = f.readLine();
+			int count = 0;
+
+			while (line != null)
+			{
+				count++;
+
+				if (count == 4)
+				{
+					break;
+				}
+
+				line = f.readLine();
+			}
+		}
+		catch (Exception e)
+		{
+			return "Error: " + e.getMessage() + "\n";
+		}
+
+		if (line == null)
+		{
+			return "Error: cannot read start time\n";
+		}
+
+		return msg += line + "\n```\n";
 	}
 }
