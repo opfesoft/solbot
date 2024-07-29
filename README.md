@@ -1,4 +1,4 @@
-# SolBot (Eclipse Java project)
+# SolBot (Eclipse Java project)<br>(Discontinued as of 2024-07-29)
 
 A simple Discord bot using [Discord4J](https://github.com/Discord4J/Discord4J) and named pipes (`mkfifo`) to send commands to the worldserver stdin. It is more or less a proof of concept, but works quite well.
 
